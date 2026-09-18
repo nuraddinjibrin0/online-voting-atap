@@ -12,12 +12,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const tabs = [
-  { to: "/admin", label: "Overview", exact: true },
-  { to: "/admin/candidates", label: "Candidates" },
-  { to: "/admin/elections", label: "Elections" },
-  { to: "/admin/voters", label: "Voters" },
-  { to: "/admin/audit", label: "Audit logs" },
-] as const;
+  { to: "/admin" as const, label: "Overview", exact: true },
+  { to: "/admin/candidates" as const, label: "Candidates", exact: false },
+  { to: "/admin/elections" as const, label: "Elections", exact: false },
+  { to: "/admin/voters" as const, label: "Voters", exact: false },
+  { to: "/admin/audit" as const, label: "Audit logs", exact: false },
+];
 
 function AdminLayout() {
   const { data: session, isPending } = useQuery(sessionQuery);

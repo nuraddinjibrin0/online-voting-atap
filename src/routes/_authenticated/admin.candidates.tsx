@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/admin/candidates")({
       },
     ],
   }),
-  component: ManageCandidates;
+  component: ManageCandidates,
 });
 
 type FormState = {
