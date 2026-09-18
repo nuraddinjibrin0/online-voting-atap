@@ -11,12 +11,12 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminLayout,
 });
 
-const tabs: { to: string; label: string; exact: boolean }[] = [
-  { to: "/admin", label: "Overview", exact: true },
-  { to: "/admin/candidates", label: "Candidates", exact: false },
-  { to: "/admin/elections", label: "Elections", exact: false },
-  { to: "/admin/voters", label: "Voters", exact: false },
-  { to: "/admin/audit", label: "Audit logs", exact: false },
+const tabs = [
+  { to: "/admin" as const, label: "Overview", exact: true },
+  { to: "/admin/candidates" as const, label: "Candidates", exact: false },
+  { to: "/admin/elections" as const, label: "Elections", exact: false },
+  { to: "/admin/voters" as const, label: "Voters", exact: false },
+  { to: "/admin/audit" as const, label: "Audit logs", exact: false },
 ];
 
 function AdminLayout() {
