@@ -12,7 +12,7 @@ import {
   uniqueSuffix,
   votesFor,
 } from "./support/backend";
-import { registerVoter, voteFor, type } from "./support/flows";
+import { registerVoter, voteFor } from "./support/flows";
 
 test.afterAll(async () => {
   await cleanupTestData();
