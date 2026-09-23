@@ -37,14 +37,15 @@ export async function signOut(page: Page) {
   await expect(page).toHaveURL(/\/login/, { timeout: 30_000 });
 }
 
+/** Returns the candidate card that contains the given candidate name. */
+export function candidateCard(page: Page, candidateName: string) {
+  return page.locator('[data-slot="card"]').filter({ hasText: candidateName });
+}
+
 /** Clicks Vote on a candidate card and confirms the dialog. */
 export async function voteFor(page: Page, candidateName: string) {
-  const card = page.locator("div", { has: page.getByText(candidateName, { exact: true }) });
-  await page
-    .getByRole("button", { name: "Vote", exact: true })
-    .first()
-    .click();
+  const card = candidateCard(page, candidateName);
+  await card.getByRole("button", { name: "Vote", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toContainText("Confirm your vote");
   await page.getByRole("button", { name: "Confirm vote" }).click();
-  return card;
 }
