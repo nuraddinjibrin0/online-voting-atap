@@ -158,6 +158,16 @@ export async function cleanupTestData() {
     await backend.from("votes").delete().eq("voter_id", userId);
   }
   if (createdCandidateIds.length) {
+    const { data: photos } = await backend
+      .from("candidates")
+      .select("photo_url")
+      .in("id", createdCandidateIds);
+    const paths = (photos ?? [])
+      .map((row) => row.photo_url)
+      .filter((path): path is string => Boolean(path) && !path!.startsWith("http"));
+    if (paths.length) {
+      await backend.storage.from("candidate-photos").remove(paths);
+    }
     await backend.from("candidates").delete().in("id", createdCandidateIds);
   }
   if (createdElectionIds.length) {
