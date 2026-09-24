@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { auditActionsFor, cleanupTestData } from "./support/backend";
-import { login, registerVoter, signOut } from "./support/flows";
+import { gotoHydrated, login, registerVoter, signOut } from "./support/flows";
 
 test.afterAll(async () => {
   await cleanupTestData();
@@ -21,7 +21,7 @@ test("a new voter can register, is given a profile, and lands on the voter dashb
 });
 
 test("registration rejects invalid input before touching the backend", async ({ page }) => {
-  await page.goto("/register", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/register");
   await page.getByLabel("Full name").fill("A");
   await page.getByRole("button", { name: "Create my voter account" }).click();
   await expect(page.getByRole("alert")).toContainText("Enter your full name.");
@@ -66,7 +66,7 @@ test("wrong credentials are refused with a clear message", async ({ page }) => {
   const voter = await registerVoter(page, "badpass");
   await signOut(page);
 
-  await page.goto("/login", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/login");
   await page.getByLabel("Email").fill(voter.email);
   await page.getByLabel("Password").fill("Totally-Wrong-123");
   await page.getByRole("button", { name: "Log in" }).click();

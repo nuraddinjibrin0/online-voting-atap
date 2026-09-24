@@ -130,6 +130,14 @@ export async function setElectionStatus(id: string, status: "draft" | "open" | "
   if (error) throw error;
 }
 
+/** Closes every election this test run created, except the given one. */
+export async function closeOtherTestElections(keepId?: string) {
+  const ids = createdElectionIds.filter((id) => id !== keepId);
+  if (!ids.length) return;
+  const { error } = await backend.from("elections").update({ status: "closed" }).in("id", ids);
+  if (error) throw error;
+}
+
 export async function votesFor(electionId: string) {
   const { data, error } = await backend
     .from("votes")

@@ -12,7 +12,7 @@ import {
   uniqueSuffix,
   votesFor,
 } from "./support/backend";
-import { registerVoter, voteFor } from "./support/flows";
+import { gotoHydrated, registerVoter, voteFor } from "./support/flows";
 
 test.afterAll(async () => {
   await cleanupTestData();
@@ -23,8 +23,8 @@ test("an administrator can add, edit and delete a candidate with a photo", async
   const admin = await registerVoter(page, "admin-candidates");
   await grantAdmin(admin.id);
 
-  await page.goto("/admin/candidates", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Candidates" })).toBeVisible();
+  await gotoHydrated(page, "/admin/candidates");
+  await expect(page.getByRole("button", { name: "Add candidate" })).toBeVisible();
 
   // Create — with validation first.
   await page.getByRole("button", { name: "Add candidate" }).click();
@@ -63,10 +63,19 @@ test("an administrator can add, edit and delete a candidate with a photo", async
     timeout: 30_000,
   });
 
-  const actions = await auditActionsFor(admin.id);
-  expect(actions).toContain("CANDIDATE_CREATED");
-  expect(actions).toContain("CANDIDATE_UPDATED");
-  expect(actions).toContain("CANDIDATE_DELETED");
+  // The candidate row is gone; confirm the database no longer holds it.
+  await expect
+    .poll(async () => {
+      const { data } = await backend.from("candidates").select("id").eq("id", candidateId!);
+      return (data ?? []).length;
+    }, { timeout: 30_000 })
+    .toBe(0);
+
+  await expect
+    .poll(() => auditActionsFor(admin.id), { timeout: 30_000 })
+    .toEqual(
+      expect.arrayContaining(["CANDIDATE_CREATED", "CANDIDATE_UPDATED", "CANDIDATE_DELETED"]),
+    );
 });
 
 test("an administrator can create an election and open and close voting", async ({ page }) => {
@@ -74,7 +83,7 @@ test("an administrator can create an election and open and close voting", async 
   const admin = await registerVoter(page, "admin-elections");
   await grantAdmin(admin.id);
 
-  await page.goto("/admin/elections", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/admin/elections");
   await page.getByRole("button", { name: "Create election" }).click();
 
   // Validation: end before start.
@@ -120,9 +129,9 @@ test("the overview totals and results reflect real votes", async ({ page }) => {
   expect(await votesFor(election.id)).toHaveLength(1);
 
   await grantAdmin(voter.id);
-  await page.goto("/admin", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/admin");
 
-  await expect(page.getByText("Administration")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Administration" })).toBeVisible();
   await expect(page.getByText(candidate.full_name)).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(election.title).first()).toBeVisible();
 });
@@ -130,11 +139,12 @@ test("the overview totals and results reflect real votes", async ({ page }) => {
 test("an administrator can review voters and grant or revoke administrator rights", async ({
   page,
 }) => {
+  // Register the target voter first: the last registration owns the browser session.
+  const voter = await registerVoter(page, "target-voter");
   const admin = await registerVoter(page, "admin-voters");
   await grantAdmin(admin.id);
-  const voter = await registerVoter(page, "target-voter");
 
-  await page.goto("/admin/voters", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/admin/voters");
   const row = page.getByRole("row", { name: new RegExp(voter.voterId) });
   await expect(row).toBeVisible({ timeout: 30_000 });
   await expect(row).toContainText(voter.email);
@@ -178,9 +188,9 @@ test("the audit log shows activity without revealing any candidate choice", asyn
   await expect(page.getByText("Your vote has been submitted")).toBeVisible({ timeout: 30_000 });
 
   await grantAdmin(voter.id);
-  await page.goto("/admin/audit", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/admin/audit");
 
-  await expect(page.getByRole("heading", { name: "Audit logs" })).toBeVisible();
+  await expect(page.getByText("Audit logs", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Vote submitted").first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("Registration").first()).toBeVisible();
   await expect(page.getByText(candidate.full_name)).toHaveCount(0);

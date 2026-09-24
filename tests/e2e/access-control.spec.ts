@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { backend, cleanupTestData, grantAdmin } from "./support/backend";
-import { registerVoter } from "./support/flows";
+import { gotoHydrated, registerVoter } from "./support/flows";
 
 test.afterAll(async () => {
   await cleanupTestData();
@@ -9,7 +9,7 @@ test.afterAll(async () => {
 
 test("signed-out visitors are sent to the login page for protected routes", async ({ page }) => {
   for (const route of ["/dashboard", "/admin", "/admin/candidates", "/admin/audit"]) {
-    await page.goto(route, { waitUntil: "domcontentloaded" });
+    await gotoHydrated(page, route);
     await expect(page, `${route} should require signing in`).toHaveURL(/\/login/, {
       timeout: 30_000,
     });
@@ -21,7 +21,7 @@ test("a voter has no administration link and cannot open the admin area", async 
 
   await expect(page.getByRole("link", { name: "Administration" })).toHaveCount(0);
 
-  await page.goto("/admin", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/admin");
   await expect(page.getByText("Administrator access only")).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to voting" })).toBeVisible();
 });
@@ -55,7 +55,7 @@ test("an administrator sees the admin area and its management tabs", async ({ pa
   const admin = await registerVoter(page, "admin-access");
   await grantAdmin(admin.id);
 
-  await page.goto("/admin", { waitUntil: "domcontentloaded" });
+  await gotoHydrated(page, "/admin");
   await expect(page.getByRole("heading", { name: "Administration" })).toBeVisible();
   for (const tab of ["Overview", "Candidates", "Elections", "Voters", "Audit logs"]) {
     await expect(page.getByRole("link", { name: tab })).toBeVisible();

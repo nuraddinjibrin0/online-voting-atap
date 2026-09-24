@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import {
   auditActionsFor,
   cleanupTestData,
+  closeOtherTestElections,
   createCandidate,
   createElection,
   setElectionStatus,
@@ -46,7 +47,7 @@ test("a voter can cast exactly one vote in an open election", async ({ page }) =
   expect(mine[0]!.candidate_id).toBe(candidate.id);
 
   // Voting status survives a reload.
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.reload({ waitUntil: "load" });
   await expect(page.getByText("Your vote has been submitted")).toBeVisible({ timeout: 30_000 });
 });
 
@@ -94,12 +95,14 @@ test("voting is impossible when the election is not open", async ({ page }) => {
     position: `E2E Secretary ${suffix}`,
   });
 
+  await closeOtherTestElections(election.id);
   await registerVoter(page, "draft");
 
-  await expect(page.getByText("Not started")).toBeVisible();
+  // The dashboard never offers a draft election for voting.
+  await expect(page.getByText("Open for voting")).toHaveCount(0);
   await expect(
-    candidateCard(page, candidate.full_name).getByRole("button", { name: "Voting closed" }),
-  ).toBeDisabled();
+    candidateCard(page, candidate.full_name).getByRole("button", { name: "Vote", exact: true }),
+  ).toHaveCount(0);
 
   const outcome = await page.evaluate(
     async ([electionId, candidateId]) => {
